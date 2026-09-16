@@ -96,6 +96,9 @@ static mapsec_u16_t CorrectSpecialMapSecId_Internal(mapsec_u16_t mapSecId);
 static mapsec_u16_t GetTerraOrMarineCaveMapSecId(void);
 static void GetMarineCaveCoords(u16 *x, u16 *y);
 static bool32 IsPlayerInAquaHideout(mapsec_u8_t mapSecId);
+static bool8 GetSecretBaseFlyCoords(u16 *x, u16 *y);
+static const u8 sText_SecretIslet[] = _("SECRET ISLET");
+static const u8 sText_SecretShore[] = _("SECRET SHORE");
 static void GetPositionOfCursorWithinMapSec(void);
 static bool8 RegionMap_IsMapSecIdInNextRow(u16 y);
 static void SpriteCB_CursorMapFull(struct Sprite *sprite);
@@ -216,6 +219,25 @@ static const mapsec_u8_t sMapSecAquaHideoutOld[] =
 {
     MAPSEC_AQUA_HIDEOUT_OLD
 };
+
+static bool8 GetSecretBaseFlyCoords(u16 *x, u16 *y)
+{
+    switch (VarGet(VAR_SECRET_BASE_MAP))
+    {
+    case MAPSEC_ROUTE_127:
+        *x = 26;
+        *y = 9;
+        return TRUE;
+
+    case MAPSEC_ROUTE_133:
+        *x = 14;
+        *y = 12;
+        return TRUE;
+
+    default:
+        return FALSE;
+    }
+}
 
 static const struct OamData sRegionMapCursorOam =
 {
@@ -423,13 +445,13 @@ static const u8 sMapHealLocations[][3] =
     [MAPSEC_ROUTE_124] = {MAP_GROUP(MAP_ROUTE124), MAP_NUM(MAP_ROUTE124), HEAL_LOCATION_NONE},
     [MAPSEC_ROUTE_125] = {MAP_GROUP(MAP_ROUTE125), MAP_NUM(MAP_ROUTE125), HEAL_LOCATION_NONE},
     [MAPSEC_ROUTE_126] = {MAP_GROUP(MAP_ROUTE126), MAP_NUM(MAP_ROUTE126), HEAL_LOCATION_NONE},
-    [MAPSEC_ROUTE_127] = {MAP_GROUP(MAP_ROUTE127), MAP_NUM(MAP_ROUTE127), HEAL_LOCATION_NONE},
+    [MAPSEC_ROUTE_127] = {MAP_GROUP(MAP_ROUTE127), MAP_NUM(MAP_ROUTE127), HEAL_LOCATION_ROUTE_127_SECRET_ISLET},
     [MAPSEC_ROUTE_128] = {MAP_GROUP(MAP_ROUTE128), MAP_NUM(MAP_ROUTE128), HEAL_LOCATION_NONE},
     [MAPSEC_ROUTE_129] = {MAP_GROUP(MAP_ROUTE129), MAP_NUM(MAP_ROUTE129), HEAL_LOCATION_NONE},
     [MAPSEC_ROUTE_130] = {MAP_GROUP(MAP_ROUTE130), MAP_NUM(MAP_ROUTE130), HEAL_LOCATION_NONE},
     [MAPSEC_ROUTE_131] = {MAP_GROUP(MAP_ROUTE131), MAP_NUM(MAP_ROUTE131), HEAL_LOCATION_NONE},
     [MAPSEC_ROUTE_132] = {MAP_GROUP(MAP_ROUTE132), MAP_NUM(MAP_ROUTE132), HEAL_LOCATION_NONE},
-    [MAPSEC_ROUTE_133] = {MAP_GROUP(MAP_ROUTE133), MAP_NUM(MAP_ROUTE133), HEAL_LOCATION_NONE},
+    [MAPSEC_ROUTE_133] = {MAP_GROUP(MAP_ROUTE133), MAP_NUM(MAP_ROUTE133), HEAL_LOCATION_ROUTE_133_SECRET_SHORE},
     [MAPSEC_ROUTE_134] = {MAP_GROUP(MAP_ROUTE134), MAP_NUM(MAP_ROUTE134), HEAL_LOCATION_NONE},
     [MAPSEC_PALLET_TOWN] = {MAP_GROUP(MAP_PALLET_TOWN), MAP_NUM(MAP_PALLET_TOWN), HEAL_LOCATION_PALLET_TOWN},
     [MAPSEC_VIRIDIAN_CITY] = {MAP_GROUP(MAP_VIRIDIAN_CITY), MAP_NUM(MAP_VIRIDIAN_CITY), HEAL_LOCATION_VIRIDIAN_CITY},
@@ -1462,6 +1484,18 @@ static u8 GetMapsecType(mapsec_u16_t mapSecId)
         return FlagGet(FLAG_LANDMARK_BATTLE_FRONTIER) ? MAPSECTYPE_BATTLE_FRONTIER : MAPSECTYPE_NONE;
     case MAPSEC_SOUTHERN_ISLAND:
         return FlagGet(FLAG_LANDMARK_SOUTHERN_ISLAND) ? MAPSECTYPE_ROUTE : MAPSECTYPE_NONE;
+    case MAPSEC_ROUTE_127:
+        return FlagGet(FLAG_BADGE07_GET)
+            && CheckPlayerCurrentlyHasSecretBase()
+            && VarGet(VAR_SECRET_BASE_MAP) == MAPSEC_ROUTE_127
+            ? MAPSECTYPE_ROUTE_CANFLY
+            : MAPSECTYPE_ROUTE;
+    case MAPSEC_ROUTE_133:
+        return FlagGet(FLAG_BADGE07_GET)
+            && CheckPlayerCurrentlyHasSecretBase()
+            && VarGet(VAR_SECRET_BASE_MAP) == MAPSEC_ROUTE_133  
+            ? MAPSECTYPE_ROUTE_CANFLY 
+            : MAPSECTYPE_ROUTE;
     case MAPSEC_PALLET_TOWN:
         return FlagGet(FLAG_WORLD_MAP_PALLET_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_VIRIDIAN_CITY:
@@ -2058,6 +2092,8 @@ static void SetFlyMapCallback(void callback(void))
 static void DrawFlyDestTextWindow(void)
 {
     u16 i;
+    u16 x;
+    u16 y;
     bool32 namePrinted;
     const u8 *name;
 
@@ -2083,6 +2119,27 @@ static void DrawFlyDestTextWindow(void)
                 break;
             }
         }
+            // Fly map names for the player's secret base on the Secret Islet or Secret Shore
+        if (CheckPlayerCurrentlyHasSecretBase()
+            && sFlyMap->regionMap.mapSecId == VarGet(VAR_SECRET_BASE_MAP)
+            && GetSecretBaseFlyCoords(&x, &y)
+            && sFlyMap->regionMap.cursorPosX == x
+            && sFlyMap->regionMap.cursorPosY == y)
+        {
+            namePrinted = TRUE;
+
+            if (sFlyMap->regionMap.mapSecId == MAPSEC_ROUTE_127)
+                 name = sText_SecretIslet;
+            else 
+                 name = sText_SecretShore;
+            ClearStdWindowAndFrameToTransparent(WIN_MAPSEC_NAME, FALSE);
+            DrawStdFrameWithCustomTileAndPalette(WIN_MAPSEC_NAME_TALL, FALSE, 101, 13);
+            AddTextPrinterParameterized(WIN_MAPSEC_NAME_TALL, FONT_NORMAL, sFlyMap->regionMap.mapSecName, 0, 1, 0, NULL);
+            AddTextPrinterParameterized(WIN_MAPSEC_NAME_TALL, FONT_NORMAL, name, GetStringRightAlignXOffset(FONT_NORMAL, name, 96), 17, 0, NULL);
+            ScheduleBgCopyTilemapToVram(0);
+            sDrawFlyDestTextWindow = TRUE;
+        }
+
         if (!namePrinted)
         {
             if (sDrawFlyDestTextWindow == TRUE)
@@ -2380,6 +2437,28 @@ static void TryCreateRedOutlineFlyDestIcons(void)
     u16 height;
     mapsec_u16_t mapSecId;
     u8 spriteId;
+    
+    // Highlight the player's current Secret Base using the Battle Frontier red outline.
+    // This is done only for the Secret Islet and Secret Shore locations
+    if (gSaveBlock1Ptr->secretBases[0].secretBaseId)
+    {
+        mapSecId = VarGet(VAR_SECRET_BASE_MAP);
+
+        if (GetSecretBaseFlyCoords(&x, &y))
+        {
+            x *= 8;
+            y *= 8;
+
+            spriteId = CreateSprite(&sFlyDestIconSpriteTemplate, x, y, 2);
+            if (spriteId != MAX_SPRITES)
+            {
+                gSprites[spriteId].oam.size = SPRITE_SIZE(16x16);
+                gSprites[spriteId].callback = SpriteCB_FlyDestIcon;
+                StartSpriteAnim(&gSprites[spriteId], FLYDESTICON_RED_OUTLINE);
+                gSprites[spriteId].sIconMapSec = mapSecId;
+            }
+        }
+}
 
     for (i = 0; sRedOutlineFlyDestinations[i][1] != MAPSEC_NONE; i++)
     {
@@ -2441,6 +2520,9 @@ static void CB_FadeInFlyMap(void)
 
 static void CB_HandleFlyMapInput(void)
 {
+    u16 x;
+    u16 y;
+
     if (sFlyMap->state == 0)
     {
         switch (DoRegionMapInputCallback())
@@ -2453,7 +2535,12 @@ static void CB_HandleFlyMapInput(void)
             DrawFlyDestTextWindow();
             break;
         case MAP_INPUT_A_BUTTON:
-            if (sFlyMap->regionMap.mapSecType == MAPSECTYPE_CITY_CANFLY || sFlyMap->regionMap.mapSecType == MAPSECTYPE_BATTLE_FRONTIER)
+            if (sFlyMap->regionMap.mapSecType == MAPSECTYPE_CITY_CANFLY
+             || sFlyMap->regionMap.mapSecType == MAPSECTYPE_BATTLE_FRONTIER
+             || (sFlyMap->regionMap.mapSecType == MAPSECTYPE_ROUTE_CANFLY
+              && GetSecretBaseFlyCoords(&x, &y)
+              && sFlyMap->regionMap.cursorPosX == x
+              && sFlyMap->regionMap.cursorPosY == y))
             {
                 m4aSongNumStart(SE_SELECT);
                 sFlyMap->choseFlyLocation = TRUE;
