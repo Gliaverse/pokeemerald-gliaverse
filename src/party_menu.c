@@ -2964,11 +2964,22 @@ static void SetPartyMonFieldSelectionActions(struct Pokemon *mons, u8 slotId)
 
             if (GetMonData(&mons[slotId], i + MON_DATA_MOVE1) == FieldMove_GetMoveId(j))
             {
-                AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, j + MENU_FIELD_MOVES);
+                // If Mon already knows FLY/FLASH and the HM is in the bag, prevent it from being added to action list
+                if ((FieldMove_GetMoveId(j) != MOVE_FLY || !CheckBagHasItem(ITEM_HM02, 1)) 
+                 && (FieldMove_GetMoveId(j) != MOVE_FLASH || !CheckBagHasItem(ITEM_HM05, 1)))
+                {
+                    AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, j + MENU_FIELD_MOVES);
+                }
                 break;
             }
         }
     }
+
+    // If action list consists of < 5 moves & bag has HMs for FLY/FLASH, add FLY/FLASH to action list (regardless of whether Mon can learn the move)
+    if (sPartyMenuInternal->numActions < 5 && CheckBagHasItem(ITEM_HM02, 1))
+        AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, 5 + MENU_FIELD_MOVES);
+    if (sPartyMenuInternal->numActions < 5 && CheckBagHasItem(ITEM_HM05, 1))
+        AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, 1 + MENU_FIELD_MOVES);
 
     if (!InBattlePike())
     {
@@ -5541,6 +5552,45 @@ bool8 BoxMonKnowsMove(struct BoxPokemon *boxMon, enum Move move)
             return TRUE;
     }
     return FALSE;
+}
+
+bool8 PlayerHasMove(u16 move)
+{
+    u16 item;
+    switch (move)
+    {
+        case MOVE_SECRET_POWER:
+            item = ITEM_TM43;
+            break;
+        case MOVE_CUT:
+            item = ITEM_HM01;
+            break;
+        case MOVE_FLY:
+            item = ITEM_HM02;
+            break;
+        case MOVE_SURF:
+            item = ITEM_HM03;
+            break;
+        case MOVE_STRENGTH:
+            item = ITEM_HM04;
+            break;
+        case MOVE_FLASH:
+            item = ITEM_HM05;
+            break;
+        case MOVE_ROCK_SMASH:
+            item = ITEM_HM06;
+            break;
+        case MOVE_WATERFALL:
+            item = ITEM_HM07;
+            break;
+        case MOVE_DIVE:
+            item = ITEM_HM08;
+            break;
+        default:
+            return FALSE;
+            break;
+    }
+    return CheckBagHasItem(item, 1);
 }
 
 static void DisplayLearnMoveMessage(const u8 *str)
