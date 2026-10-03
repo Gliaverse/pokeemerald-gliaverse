@@ -22,6 +22,11 @@ Based off RHH's pokeemerald-expansion 1.17.0 https://github.com/rh-hideout/pokee
 
 Please consider [crediting all contributors](CREDITS.md) involved in the project!
 
+**Additional Credits:**
+
+- LOuroboros - [2-in-1 bike](https://github.com/LOuroboros/pokeemerald/commit/ab27f6ff1663a07ea8a8d96c877bbb9279f72f53)
+- devolov/voloved - [Use HMs without having to learn them](https://github.com/pret/pokeemerald/wiki/Use-HMs-Without-Any-Pokemon-in-your-Party-Knowing-Them)
+
 # Choosing `pokeemerald` or **`pokeemerald-expansion`**
 
 - **`pokeemerald-expansion`** supports multiplayer functionality with other games built on **`pokeemerald-expansion`**. It is not compatible with official Pokémon games.
