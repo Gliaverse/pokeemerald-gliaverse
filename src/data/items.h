@@ -14011,9 +14011,9 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("Mach Bike"),
         .price = 0,
         .description = COMPOUND_STRING(
-            "A folding bicycle\n"
-            "that doubles your\n"
-            "speed or better."),
+            "A folding bike for\n"
+            "going fast. Press\n"
+            "{R_BUTTON} to swap modes."),
         .importance = 1,
         .pocket = POCKET_KEY_ITEMS,
         .type = ITEM_USE_FIELD,
@@ -14028,9 +14028,9 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("Acro Bike"),
         .price = 0,
         .description = COMPOUND_STRING(
-            "A folding bicycle\n"
-            "capable of jumps\n"
-            "and wheelies."),
+            "A folding bike for\n"
+            "doing stunts. Press\n"
+            "{R_BUTTON} to swap modes."),
         .importance = 1,
         .pocket = POCKET_KEY_ITEMS,
         .type = ITEM_USE_FIELD,

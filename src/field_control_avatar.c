@@ -240,6 +240,46 @@ int ProcessPlayerFieldInput(struct FieldInput *input)
     if (input->pressedRButton && TryStartDexNavSearch())
         return TRUE;
 
+    if (input->pressedRButton  && TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
+    {
+        if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_MACH_BIKE)
+        {
+            // Switch to Acro Bike
+            gPlayerAvatar.flags -= PLAYER_AVATAR_FLAG_MACH_BIKE;
+            gPlayerAvatar.flags += PLAYER_AVATAR_FLAG_ACRO_BIKE;
+            SetPlayerAvatarTransitionFlags(PLAYER_AVATAR_FLAG_ACRO_BIKE);
+
+            // Dynamically swap bike in the bag
+            RemoveBagItem(ITEM_MACH_BIKE, 1);
+            AddBagItem(ITEM_ACRO_BIKE, 1);
+
+            // Update the swapped bike's registered state
+            if (gSaveBlock1Ptr->registeredItem == ITEM_MACH_BIKE)
+                gSaveBlock1Ptr->registeredItem = ITEM_ACRO_BIKE;
+            
+            // Audio feedback
+            PlaySE(SE_BIKE_HOP);
+        }
+        else
+        {
+            // Switch to Mach Bike
+            gPlayerAvatar.flags -= PLAYER_AVATAR_FLAG_ACRO_BIKE;
+            gPlayerAvatar.flags += PLAYER_AVATAR_FLAG_MACH_BIKE;
+            SetPlayerAvatarTransitionFlags(PLAYER_AVATAR_FLAG_MACH_BIKE);
+
+            // Dynamically swap the bike in the bag
+            RemoveBagItem(ITEM_ACRO_BIKE, 1);
+            AddBagItem(ITEM_MACH_BIKE, 1);
+
+            // Update the swapped bike's registered state
+            if (gSaveBlock1Ptr->registeredItem == ITEM_ACRO_BIKE)
+                gSaveBlock1Ptr->registeredItem = ITEM_MACH_BIKE;
+
+            // Audio feedback
+            PlaySE(SE_BIKE_BELL);
+        }
+    }
+
     if (input->input_field_1_2 && DEBUG_OVERWORLD_MENU && !DEBUG_OVERWORLD_IN_MENU)
     {
         PlaySE(SE_WIN_OPEN);
